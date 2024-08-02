@@ -1,38 +1,57 @@
-name: github pages
+name: Deploy website
 
 on:
   push:
     branches:
     - release
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  build-deploy:
-    runs-on: ubuntu-18.04
+  build:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     
-    - name: Clone Org-mode exporter
-      run: git clone https://github.com/kaushalmodi/ox-hugo.git ox-hugo
-
-    - name: Setup emacs
+    - name: Setup Emacs
       uses: purcell/setup-emacs@master
       with:
         version: 29.4
-
-    - name: Export Org file to Markdown
-      run: emacs ./org/all-posts.org --batch -L ./ox-hugo -l ox-hugo.el --eval='(org-hugo-export-wim-to-md t)' --kill
 
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: 'latest'
 
-    - name: Build
+    - name: Build (Org to Hugo)
+      run: emacs ./org/all-posts.org --batch --eval="(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t) (package-initialize) (package-install 'ox-hugo) (require 'ox-hugo) (org-hugo-export-wim-to-md t))" --kill
+
+    - name: Build (Hugo to site)
       run: hugo --minify
 
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v2
-      env:
-        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        PUBLISH_BRANCH: master
-        PUBLISH_DIR: ./public
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./public
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
