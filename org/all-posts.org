@@ -1,0 +1,19 @@
+#+Title: microbo
+#+Author: jthulhu
+#+startup: overview
+#+hugo_base_dir: ../
+
+* Blog
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:END:
+
+* Home
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: /
+:END:
+** Search
+:PROPERTIES:
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :layout search
+:EXPORT_FILE_NAME: search
+:END:
