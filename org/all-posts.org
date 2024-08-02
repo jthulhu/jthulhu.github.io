@@ -899,6 +899,80 @@ in Programming]]/.
     are, essentially, hash tables, which are much less performant than module values or ADTs. So,
     sure, you can use them without fear of incompatibility, but in practice it's a good thing
     that you don't.
+
+** TODO A case against language specific package managers :sysadmin:computer_science:
+:PROPERTIES:
+:EXPORT_DATE: 2024-06-14
+:EXPORT_FILE_NAME: case-against-language-package-manager
+:END:
+Recently, I found myself frequently and vividly discussing the merits of language-specific
+package managers, by which I mean tools that auto-magically handle dependencies for the
+developer, by taking care of fetching them, installing them somewhere, making them available to
+subsequent build steps; but also take care of uninstalling dependencies that used to be useful,
+updating to newer versions, and, more generally, organizing the local environment for that
+programming language. If you only have ever used modern tools, you may think this is an easy
+task, and that nothing can go wrong. Yet, it used to be the case that, even in popular
+programming languages, this was handled extremely poorly[fn:xkcd-argument].
+
+[[https://imgs.xkcd.com/comics/python_environment.png#center]]
+
+Opposed to language-specific package managers are system package managers, ie. package managers
+which are not tied to a specific programming language, and thus are suited to handle your whole
+system.
+
+My claim is that the ecosystem of a programming language should *maximally decouple their
+language-specific package manager* (if they have any) *from any other component of the
+ecosystem*, and view it as one possible way to install dependencies for a developer, rather than
+the canonical one, excluding any other package manager from being officially supported.
+
+There are some exceptions for this rule, on which I will come back at the end of this post; but,
+as far as I see it, they do not represent the majority of the case. The "default" design of an
+ecosystem should be to integrate nicely with any package manager, and, in some specific
+situations, one could consider the trade off of having a single package manager to think of,
+designed specifically for the ecosystem it belongs to.
+
+To be more precise, I think that, in most situations, not having a tightly coupled
+language-specific package manager has the following advantages over having one:
+- less burden on the maintainers of the ecosystem:
+  - for the packaging, they are helped by an army of packagers from various communities
+  - they don't /have/ to maintain a package manager
+  - but if they do, it is still helpful to have a clear abstraction boundary between the package
+    manager --- that does only that --- and the rest of the ecosystem; this means it's easier to
+    design the package manager properly, with low coupling, because a natural boundary is already
+    present there
+- more freedom for the end user:
+  - by making components more modular, you ease the development of alternatives for some specific
+    components, which might fit better the particular use case of certain users
+  - by allowing the user to chose the package manager they prefer, you don't enforce your point
+    of view of how a package manager should work to a user that might think differently; this is
+    important because, package managers usually not being the center of expertise of people
+    developing programming languages, it is most likely that their point of view on the matter is
+    not the most enlighten one, and therefore users who disagree with it might have good reasons
+    to disagree with you
+- less burden on the end user:
+  - by forcing the user to use a specific tool that they haven't used previously, because it was
+    designed specifically for one ecosystem, you are forcing them to learn how to use it
+  - beyond the considerations for a /single/ ecosystem, if it were to become the norm for every
+    ecosystem to have its specific tooling that is always exclusively designed for it, and didn't
+    work in any other context, it makes it harder for less tech-savvy people to use they computer
+    daily, because there are no fit-all-sizes tools they can use in most situations
+
+*** Limited scope
+**** Specifying dependencies outside of the ecosystem
+**** More complex build steps
+**** How to distribute software
+*** Less featerful than system package managers
+**** Reproducibility issues
+**** System state
+**** Coherent state
+*** Distributed or anarchic?
+**** No global indexing
+**** No sharing
+
+[fn:xkcd-argument] Rather than citing some thorough studies to back up this claim, I'm just going to
+insert an XKCD comic making the same point. I think that, if it becomes a meme how poorly you do
+something, it becomes superfluous to argue any further.
+
 * Home
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: /
