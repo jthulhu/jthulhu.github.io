@@ -7,6 +7,220 @@
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: blog
 :END:
+** DONE Efficient streaming regular pattern matching :computer_science:paper:algorithm:
+:PROPERTIES:
+:EXPORT_FILE_NAME: efficient-streaming-regex-matching
+:EXPORT_DATE: 2023-10-30
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :math true
+:END:
+
+Regular pattern matching is comes up very often, both in theoretical frameworks and in practice
+and, as such, is a problem that has been studied a lot. The RAM model in which it is studied,
+however, does not always take into account the practical difficulties that arise with very large
+amount of data, which don't fit in memory. For this reason, it makes sense to study efficient
+algorithms in a more realistic computational model, the streaming model.
+
+*** Preliminary notions
+Before diving into the main subject, let's first quickly understand what the problem actually is.
+The streaming regular pattern matching problem is a generalition of a problem of great practical
+importance, which is the pattern matching problem.
+
+**** The pattern matching problem
+Assume we have fixed a finite alphabet \(\Sigma\) for the rest of the article. Given strings
+\(P\), the /pattern/, and \(T\), the /text/, over \(\Sigma\), we want to find all
+occurences of \(P\) in \(T\). While the naive method takes \(O(nm)\) time, where
+\(n=|T|\) and \(m=|P|\), the exist faster approaches that only take \(O(n+m)\) time[fn:kmp],
+which is also clearly optimal (one has to read at least every character in \(P\) and in
+\(T\)).
+
+Yet, these algorithms are not optimal from a space complexity point of view: the naive algorithm
+only takes \(\tilde O(1)\) space. As far as I know, there is no known algorithm that is optimal
+both for the time and space complexity. However, counting the space complexity as we usually do
+is not necessarily useful in this framework, because sometimes the text is so big that it simply
+doesn't fit into memory (think of database managers which easily handle terabytes of data).
+
+**** The streaming model
+There exist several computation models that take into account the aforementioned problem. We will
+focus on the /streaming model/, which corresponds to receiving the text character by character
+(like as if you were reading it from a disk, or receiving it from over the internet). In this
+scenario, reading a character /again/ once it has been seen is expensive or impossible. Instead,
+every character that one wants to read again should be explicitely stored, and therefore counts
+in the space complexity.
+
+In this model, algorithms that take \(O(n+m)\) time and \(O(m)\) space are
+optimal[fn:foolingset]. But we want to do /better/ (if we have a linear space complexity in a
+streaming model, then we don't gain much information with respect to a classical model), which
+means a space complexity that is sublinear in both \(n\) and \(m\). This is, in fact, impossible
+even without any time restriction, but only in the deterministic case. If we consider the broader
+class of algorithms to include Monte Carlo algorithms[fn:monte-carlo], then there exists a
+refinement of the Robin-Karp algorithm that finds the occurences with high probability, and which
+has a sublinear complexity: the Robin-Karp algorithm works by computing the hash of a pattern,
+then computing the hash of every substring of the same length as the pattern, and comparing only
+the hash, not the whole pattern. If the hash function is "random enough", this outputs true
+occurences with high probability. Furthermore, in the original algorithm, the hash function is a
+"rolling function"[fn:rolling], that is, if it is known for \(a_0a_1\ldots a_m\), it is easy to
+compute for \(a_1a_2\ldots a_{m+1}\). The refinement of this algorithm makes it possible to
+"roll" the hash without buffering a sliding window of \(m\) characters.
+
+*** Regular expression matching
+We might be interested in generalizing the problem to regular expression matching in the
+streaming model: given a regular expression \(R\), for each character (that we receive in a
+streaming fashion), we must say whether there is a substring of \(T\) that ends there and that
+\(R\) matches. As before, we aim at a sublinear space complexity, but this is hard so, instead,
+we'll get a complexity that is sublinear in the size of \(R\) and polynomial in \(d\), the
+number of kleene star and disjunction operators in \(R\). If \(d\) is small before \(m\),
+then this is indeed sublinear, and we are happy. Note that the parameter \(d\) has been
+introduced because, in practice, it has been observed to be significantly smaller than \(m\).
+
+The first step to achieve this result is to construct the [[https://en.wikipedia.org/wiki/Thompson%27s_construction][Thompson automata]] of \(R\). We observe
+that parts of \(R\) that were simply concatenations of characters end up as sequences of nodes
+that only have one outgoing transition (except for the last one). We can therefore pack together
+these strings, which we will call /atomic strings/ of \(R\), and the resulting automaton has size
+\(O(d)\). The main idea of the algorithm is then to find matches of the atomic strings using the
+streaming pattern matching algorithm, and then to "stitch" together these matches into runs over
+the automata. Indeed, for each atomic string, for each character of the text, we want to know
+whether there is a substring of the text that ends on that character, and such that if we walk on
+the automata, starting on the initial state, following that string, we end up on the last state
+corresponding to that atomic string.
+
+If we just do that, however, we have to keep too much information about the past matches of
+atomic strings at any point in time. The first idea to make this work is to consider all prefixes
+of atomic strings whose length is a power of two, in addition to the atomic strings themselves.
+The set \(\Pi\) of these strings is called the set of /canonical prefixes/. We run the usual
+streaming pattern matching algorithm "in parallel" for every string in \(\Pi\).  When a
+canonical prefix \(P\in\Pi\) has an occurence, there are two cases.
+- If the prefix is a single character, then there is a walk in the automata that corresponds to a
+  suffix of the prefix of \(T\) seen so far ending with \(P\) if, and only if, there is such
+  a walk ending with an atomic string \(A\) on the previous character, and \(P\) is reachable
+  from the last state of \(A\) with ϵ-transitions (the set of such atomic strings is
+  precomputed). This is easy to check: for every atomic string \(A\), we can remember if it has
+  an occurence in the last character, and that fits in \(O(d)\) space.
+- Otherwise, we consider \(P'\) the canonical prefix of half the size of \(P\) (or a bit
+  more, if \(P\) is an atomic string). Now, to know whether there is a walk on the automata
+  that ends with \(P\), it is sufficient to know whether there is a walk on the automata that
+  ends with \(P'\), \(|P'|\) characters in the past. To know this, we must remember whether
+  an index \(i\) has an occurence of any canonical prefix \(Q\) for \(|Q|\) characters,
+  which, if done naively, requires too much memory. Solving this problem is the hard part of
+  regular streaming matching.
+
+**** Aperiodic canonical prefixes
+But what if \(P'\) is periodic? Can we bound the number of occurences too? The answer is no, in
+fact there can be /many/ occurences of periodic strings. What saves us in this case is that these
+occurences have a nice structure, which allows us to encode efficiently the set of their
+occurences.
+
+More specifically, if there are enough occurences of a periodic string \(P\) in a given
+substring of \(T\), and \(Q\) is the period of \(P\), then that substring is also a
+substring of \(Q^\infty:= QQ\ldots\). In particular, the occurences will form a sequence with
+an arithmetic progression. In order to store the occurences, we can then simply store the first
+occurence and the number of following occurences.
+
+That's enough to store efficiently the occurences, but we are interested only in /certain/
+occurences of a canonical prefix \(P\): those that end a substring of \(T\) which also
+corresponds to a walk in our automata, ending with \(P\). We call those occurences /witnesses/
+of \(P\). The problem is that those witnesses do not have the same, nice structure as the set
+of all the occurences of \(P\) in a given region, because not all occurences are witnesses.
+
+This is where technicalities arise. To find the witnesses in among all the saved occurences, we
+save not only the occurences of \(P\), but also the witnesses of the atomic strings that
+"precede" \(P\) in the automata, that is, those for which there is a path composed of
+ϵ-transitions from their last state to the first state of \(P\). To do so, we use the same
+trick, recursively: we remember all the occurences of such an atomic string \(A\) near the
+beginning of the first occurences of \(P\). \(A\) is aperiodic, then there is a constant
+number of such occurences, so it's easy, we can simply store all the (recent) witnesses.
+Otherwise, the occurences form an arithmetic progression, so we store only the first one and
+their number. Again, to find witnesses among all the saved occurences, we apply the same
+trick. If this is carefully done, we only need to recurse a logarithmic number of times with
+respect to the size of the period of \(P\), therefore \(O(\log m)\).
+
+Now, we need to "restore" the information that has been compressed. To do so, we reduce the
+problem to a graph one: given a canonical prefix \(P'\), its compressed representation of
+occurences, and its following canonical prefix \(P\), we want to know whether from the
+occurences of \(P'\) at the beginning at the set (those that we have explicitely saved) to the
+current occurence of \(P\), there is a walk on the automata the connects the end of \(P'\)
+with the end of \(P\), and that corresponds to the characters that are present in \(T\) in
+between. Of course, we have /not/ saved those characters, it would have taken too much space, but
+we also know that that string is a substring of \(Q^\infty\). We therefore consider the graph
+whose nodes are canonical prefixes and where two nodes are connected by an edge of weight \(d\)
+if there is a walk with letters in \(Q^\infty\) from the first node to the second, of length
+\(d\), with \(d\leq 10|Q|\). Now, the problem is simply whether there is a path of weight the
+distance between the saved occurence of \(P'\) and \(P\) in that graph.
+
+**** Finding weighted walks in graphs
+Given a directed, weighted multi-graph \(G\), two nodes \(u\) and \(v\), and a target weight
+\(x\), we want to know whether there is a path from \(u\) to \(v\) of weight \(x\). We solve this
+problem using dynamic programming: for every pair of nodes and weight \(w\leq x\), we decide
+whether there is a path from the first node to the second of weight \(w\): for any \(k\), we
+consider \(C_k\) a matrix of bit-vectors. Intuitively, \(C_k[u,v][d]\) indicates whether there is
+a path from \(u\) to \(v\) of weight \(d\), but only contains that information for \(d\leq
+2^k\). Then, if we define \(\odot\) with
+
+\[
+  (A\odot B)[u,v][d] = \bigvee_{\substack{w\in V(G)\\ i\in \{0,\ldots,d\}}} A[u,w][i]\land B[w,v][d-i]
+\]
+
+we can compute \(C_{k+1}\) knowing \(C_k\) and \(C_0\), using the relation
+
+\[ C_{k+1}=C_k\odot C_0\odot C_k \]
+
+This relation is true because, for any path of weight \(d\leq 2^{k+1}\), there is an edge in
+that path such that if it is removed, the two remaning paths have weight at most \(2^k\).
+
+Observe that \(\odot\) is essentially computing convolutions (and taking the disjunction of the
+results); we can therefore use the fast Fourier transform to compute it efficiently. If
+\(x=O(|V(G)|)\), this doesn't use too much space. If \(x\) is large, however, we don't obtain
+a sublinear complexity.
+
+**** Circuit computations
+In order to save space, we are going to encode our computation with circuits, and we are going to
+find another field in which the computations are performed. Rather than working with booleans
+indicating /whether/ there is a path of a given weight, we are going to work in
+\(\mathbb{F}_p\) (for a certain \(p\in\mathbb{P}\)), and we are going to /count/ (modulo
+\(p\), that is) the number of such paths.
+
+The first step is efficiently finding a suitable \(p\), that is probably prime. I am going to
+skip the details of this operation and assume that the \(p\) we have found has all the
+properties we need with probability at least \(1/2\). Furthermore, to save space we can apply a
+transformation on our circuit[fn:bringmann] which requires verifying that the circuit satisfies
+some properties. All of the conditions are verified if we translate directly our previous
+construction, with elements in \(\mathbb{F}_p\), but one: the circuit should not overflow.
+
+To ensure that the circuit does not overflow, instead of doubling the weight of the paths at each
+step, we multiply it by \(1+\varepsilon\), with \(\varepsilon=\frac1{\log x}\). I do not have
+any intuition about why that helps besides the fact that, when you carry out the computation, it
+Just Works^{©}.
+
+
+[fn:kmp] Such as the [[https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm][KMP algorithm]], which is a particular case of the more general [[https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm][Aho-Corasick]]
+    algorithm.
+
+[fn:foolingset] Which can be shown using a [[https://en.wikipedia.org/wiki/Communication_complexity][fooling set technique]].
+
+[fn:monte-carlo] In this context, a [[https://en.wikipedia.org/wiki/Monte_Carlo_algorithm][Monte-Carlo algorithm]] is an algorithm that
+    never misses an occurence of the pattern, but might wrongly detect an occurence of the
+    pattern, with probability at most \(n^{-c}\) for any constant \(c>0\) that is fixed
+    beforehand.
+
+[fn:distance] We consider the [[https://en.wikipedia.org/wiki/Hamming_distance][Hamming distance]] here, although the same problem
+    with the [[https://en.wikipedia.org/wiki/Edit_distance][edit distance]] is also studied.
+
+[fn:bringmann] The transformation is presented in the article /[[https://epubs.siam.org/doi/10.1137/1.9781611974782.69][A Near-Linear Pseudopolynomial Time
+    Algorithm for Subset Sum]]/, by Bringmann. It consists in eagerly applying the Fourier
+    transform to every input, which does not affect sum gates and simplifies the computation of
+    convolution gates. Then, the final result is obtained by computing the inverse Fourier
+    transform to the output of the circuit. With respect to that paper, though, the efficiency of
+    the method presented here does not depend on the Extended Riemann Hypothesis; it is replaced
+    with an application of the Bombieri-Vinogradov theorem.
+
+[fn:rolling] A [[https://en.wikipedia.org/wiki/Rolling_hash][rolling hash]] can be implemented using, for instance, polynomials over a well-chosen
+    ring: a string is seen as a sequence of coefficients of a polynomial. The hash is then simply
+    the evaluation of that polynomial at a well-chosen point of the field. For instance, if one
+    choses a number \(m\) and a multiplicative invertible element \(a\) in \(\mathbb{Z}_m\), one
+    sees a string \(w=x_0\ldots x_n\) as the polynomial \(P_w=x_0 + x_1 X + \ldots x_n X^n\)
+    (assuming the alphabet has size \(m\), to see letters as elements of \(\mathbb{Z}_m\)). The
+    hash of such a string is then simply the evaluation (in \(\mathbb{Z}_m\))of \(P_w\) at \(a\):
+    \(h(w)=P_w(a)\). Then, \[h(x_1\ldots x_{n+1})=x_1+\ldots+x_{n+1} a^n=\frac{h(x_0\ldots
+    x_n)-x_0}{a}+x_{n+1}a^n\] which shows it's easy to "roll" \(h\).
 
 * Home
 :PROPERTIES:
