@@ -701,24 +701,29 @@ haven't discussed yet, is its lack of purity. OCaml has some imperative aspects,
 even try to hide them! Functional programming people are usually very much aware of the
 advantages of not having imperative idioms in their code base, so they tend to see every
 occurrence of imperative programming as a lost occasion of doing something better, ie. in a more
-functional (and thus elegant) way. And, while part of me strongly agrees with this almost
-simplistic view of the world, there is also something interesting that rises out of the
+functional (and thus elegant) way. And, while part of me strongly agrees with this (almost
+simplistic) view of the world, there is also something interesting that rises out of the
 intersection of pure, functional programming and imperative programming. Something that goes
-beyond trying to stitch a functional program with an imperative one in an abomination of nature.
+beyond trying to stitch a functional program together with an imperative one, turning them into
+an abomination of nature.
+
+#+caption: Haskemblyfuck, a chimera based on Haskell, assembly and brainfuck (don't do this at home)
+[[/images/chimera.avif#center]]
 
 Indeed, programming languages like OCaml are ideal for data structures called "semi-persistent".
 To undestand what that means, let's make a little digression on data structures. Data structures
-(and in algorithmics in general), things are presented in an imperative fashion, the underlying
-model usually being (based on) Turing machines. Persistent data structures are those for which,
-even after modifying them, every "version" is still available, ie. every state of the data
-structure between two mutable operations on them is still accessible as it was "back then", and
-can be in turn operated onto as if nothing happened to it. This is very similar to how data
-structures work in pure functional programming languages, because in this setting data structures
-cannot be mutated, so if one still has a pointer to a certain version of a data structure, the
-underlying data must be as it was when it was created; and it can freely be used without fear of
-breaking someone else's data. However, it should to be noted that persistent data structure in
-general need not to be implemented using immutability. They should just exhibit observational
-immutability.
+(and algorithmics in general), are presented in an imperative fashion: the underlying model
+usually is (based on) Turing machines.  Persistent data structures are those for which, even
+after modifying them, every "version" is still available, ie. every state of the data structure
+between two mutable operations on them is still accessible as it was "back then", and can be in
+turn operated onto as if nothing happened to it.  While this is a peculiar property for
+imperative data structures, (one that is usually hard to implement efficiently for an arbitrary
+data structure), this is very similar to how data structures work out-of-the-box in pure
+functional programming languages. Indeed, purely functional data structures cannot be mutated, so
+if one still has a pointer to a certain version of a data structure, the underlying data must be
+as it was when it was created; and it can freely be used without fear of breaking someone else's
+data.  However, it should to be noted that persistent data structure in general need not to be
+implemented using immutability. They should just exhibit observational immutability.
 
 This is were OCaml kicks in: Conchon and Filliâtre built[fn:conchon-filliatre] several
 semi-peristent (a weaker, yet still useful in pratice, version of persistence) version of
