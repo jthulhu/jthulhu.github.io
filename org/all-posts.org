@@ -221,6 +221,210 @@ Just Works^{©}.
     hash of such a string is then simply the evaluation (in \(\mathbb{Z}_m\))of \(P_w\) at \(a\):
     \(h(w)=P_w(a)\). Then, \[h(x_1\ldots x_{n+1})=x_1+\ldots+x_{n+1} a^n=\frac{h(x_0\ldots
     x_n)-x_0}{a}+x_{n+1}a^n\] which shows it's easy to "roll" \(h\).
+** DONE Challenging TDD: can tests cover every feature?   :computer_science:
+:PROPERTIES:
+:EXPORT_DATE: 2023-11-02
+:EXPORT_FILE_NAME: challenging-tdd
+:END:
+
+After having spent some time in the Pharo community, I have realized how much people rely on
+tests, not only to find bugs, but as a core developping tool. In Pharo, the idea of TDD is really
+pushed as far as it can go: the typical workflow is to write unit tests, run them, which of
+course fails (because no other code has been written yet) complaining that a given method is not
+implemented. This failure is caught by the Pharo runtime, which opens their cool debugger. The
+important part is that the debugger allows you to write code right away, to fill up the missing
+method. Then, you ask the debugger to continue the execution where it was left, and the Pharo VM
+patches every live object to take into accounts the modifications you have done.
+
+Not only this sounds very cool, as there are people who literally never ever code from outside
+their debugger, but it also has a lot of good properties. You naturally don't write code that is
+not covered by a test, since every line of code you write is written when a test needs it. This
+entails that every piece of code you write has examples that use them: their unit tests. I have
+heard of some people who say they don't need to write documentation, because they write clear and
+concise unit tests, which act as the documentation. In fact, I have even heard a bold claim
+
+#+begin_quote
+  "If it's not tested, it's not a feature" --- Cueball
+#+end_quote
+
+After some search, I've realized that similar slogans are quite common among TDD enthusiasts ("/if
+it's not tested, it's broken/", ...). And it's hard to argue with the facts: there is not a single
+medium to big project that doesn't have a sizeable test suite, because /humans make mistakes/ and
+/coding is hard/.
+
+
+That being said, I've been puzzled for some time by that first sentence, "/if it's not tested,
+it's not a feature/", which somehow implies that all features are testable. Is that really the
+case? If not, how could I detect a bug in a feature that no test could reveal? The rest of this
+post will be spent searching for this kind of bugs/features.
+
+*** Detailed assumptions
+First of all, the point here is *not* to say that a test suite is fundamentally incomplete, that
+is, even if all the tests are green, there can still be bugs. In the formal verification lingo,
+tests are said to be /unsound/. But that's fine. Tests have other purposes than to formally
+certify a code base (documenting code, providing examples, tracking bugs, ...).
+
+In fact, we will assume for the rest of this post that we /know/ what the bug is. We have a
+minimal, reproducible example that exhibits it. We have infinite engineering budget, so we can
+develop as much testing infrastructure as needed. We have an arbitrary amount of time, so our
+tests can run as long as needed to reveal the bug. The question is: is there a bug for which we
+still cannot write a test that exhibits it? Take some time to think about it. If you have no
+clue, and think that it doesn't make sense to have a bug that is impossible to witness, stay with
+me!
+
+*** First attempts: randomness and side effects
+Maybe you have already faced a similar situation in practice: you know there /is/ a bug, but you
+fail to reproduce it. You try to write some tests that would exhibit it, following some
+instructions an other user has provided you indicating what happened to them when they witnessed
+the bug. Yet, frustratingly, you do not witness any bug yourself. If you have later realized what
+was the cause for that bug, and why you couldn't reproduce it easily, you may have answered our
+main question with one these cases. Most often, though, this does not qualify for the kind of
+bugs I was looking for, and I'll try to explain why on some examples.
+
+**** Randomness
+What if the behavior of the program is non-deterministic, as in, it requires a source of
+randomness to work (which is, in practice, extremely common because it is likely that the common
+datastructures of your standard library do so). Then, you could run your program in the same
+settings over and over again and, if you're unlucky enough (or lucky, from the point of view),
+never witness that particular executation trace that exhibits a bug.
+
+While this might seem like a valid example, it is not in my opinion because no program is truely
+random (at least, not in the sense we are using here). Why? Because programs delegate the task of
+getting randomness to others. Typically, when you have a pseudo-random number generator, you need
+to initialize it with a random seed, otherwise you'll always get the same results, and there is
+no random in it. The operating system can provide randomness, every cryptographically good; but
+in a test environment, you mock the operating system. You are testing your program, not /your
+program and the running operating system/. Remember that, in our setup, we already know where the
+bug is and what it is, and we have infinite engineering budget, so it is feasible to mock the
+operating system to give the exact random seed that will trigger the bug. Similarly, if you use
+some external input as a seed (the user typing on their keyboard, whatever eletrical noise a
+driver is reading, or if you have a magma lamp connected to your computer to provide /true/
+randomness), that external input is /not/ part of the software you are testing, it is part of the
+environment which contributes in modifying the software behavior, so you /can/ mock it.
+
+**** Side effects
+In fact, both of the previous attempts are examples of side effects, at the level of the program,
+that is, ways to interact (may that be a read or a write operation) with the environment, in a
+broad sense. Time itself, for instance, is part of the execution environment of a program, and,
+even though it can only be read (that is, until our hardware includes time machines), it can lead
+to non-determinism in our execution.
+
+However, if we /fix/ the environment (by mocking it), then there is no longer a source of
+randomness (this is not completely true, we'll come back on this later). This means that all the
+bugs that rely on side effects are good examples of bugs that cannot be witnessed. In fact, we
+will see in the next section that there are very simple bugs that cannot be witnessed, in a pure,
+deterministic context, and that there is no need to "cheat" to find such an example.
+
+*** Liveness and safety
+Without further ado, let me reveal the first example we will consider: a program whose only
+feature is that it terminates. A very simple noop. Now, consider that I am very stupid, and I
+have introduced a bug in this (empty) program: I have accidentally introduced a never-ending
+loop. How would I witness this bug? The answer is: I can't. After a finite amount of time, if my
+program stopped then my I can assert that this execution does not witness the bug; otherwise, I
+can't say anything. Whatever my program is doing, it might eventually stop, so I cannot be sure
+that I am witnessing a bugged execution. But it might also never stop, so I cannot be sure that I
+am witnessing a sane execution. In fact, deciding whether a program stops in general is
+undecidable, so it is /strictly impossible/ to exhibit this bug with tests, even though in my
+original example, it would be pretty easy to find the bug by reading it ("/Who's the idiot who
+added a loop in the program that should literally do nothing?  They're fired!/").
+
+In general, features can be classified as /liveness/ features or /safety/ features (or as a
+combination of both, I'm not getting into technical details). A lifeness feature asserts that
+something good will eventually happen, whereas a safety feature asserts that something bad will
+never happen. And, while it is easy to imagine a test that checks that there is no safety bug
+(because if there is one, it will happen in finite time by definition), liveness bugs cannot be
+tested, because if something good has yet to happen, that doesn't tell me whether it's going to
+happen one day or not.
+
+Some example of liveness features that are important in real life:
+ - my scheduler will, eventually, run a given task;
+ - my database manager will, eventually, be in a consistent state;
+ - my network packet will, eventually, reach whomever it was sent to;
+ - my compiler will, eventually, stop its optimisation passes and generate code;
+ - my filesystem will, eventually, flush my IO operations and /save my file on disk/;
+ - my mutex will, eventually, be realsed so that I can aquire it and go on with my life;
+ - ...
+
+Liveness features represent an important family of properties of programs, yet, according to
+Cueball, "/if it's not tested, it's not a feature/". Are you still convinced by that claim?
+
+However, the worst has yet to come...
+
+*** Non-determinism, second attempt
+Remember as I claimed, earlier, that there is no primitive in a language that is /simply
+non-deterministic/, and that I would need to ask for an external source of non-determinism? Well,
+that's simply not true, in general. To understand better the arguments presented onwards, I'll
+talk briefly about /execution traces/, that I have already mentioned.
+
+For the sake of simplicity, let's assume that the execution of a program can be modeled as a
+sequence of states. At each step, you pass to the next state. Beware that, countrary to Turing
+machines, the number of states is not necessarily bounded. Indeed, if you consider the set of
+configurations of a Turing machine (a configuration is the information about the state the Turing
+machine currently is, as well as everything that is written on every tape and the positions of
+the tape heads), that is a valid set of state that encompasses every possible execution of any
+program on a particular Turing machine. We call an execution trace of a program, in a given
+environment, "the" sequence of the states of the program, step after step.
+
+I have put /the/ between double quotes because when there is a non-deterministic operation, there
+might be multiple possible execution traces after that operation is executed. Now, most of the
+time the set of possible execution traces is a singleton, containing the /only/ possible
+execution trace (when your program is deterministic). But what if it's not? What if there are,
+say, two execution traces, one exhibiting the bug, and not the other. How would you test that?
+Remember, you can alter however you want the environment but you cannot change the semantics of
+the programming language your software was written into.
+
+Maybe some are thinking that, if the software is non-deterministic, you can simply repeat the
+test a large number of times; if the probability of triggering the bug is non-zero, then you have
+a very high probability of witnessing it at some point. After all, if we can witness it in finite
+time almost surely (ie. with probability \(1\)), maybe that's enough to consider that we were
+able to trigger the bug with a test. But this reasoning is fundamentally flawed: there is no
+reason to believe there is a distribution of probability over the results of non-deterministic
+operations. To put it in other words, what if I have an operation which returns a boolean
+non-deterministically by sending a mail to Cueball asking him what the result should be. What is
+the probability of Knuth answering true? That is non-sensical. He could very well decide to
+always answer false in production, and true during the tests.
+
+While this particular case might look a bit contrieved, there are similar situations that arise
+/very/ often in real life. The typical example is when you use an underspecified API: the
+behavior of whatever resource you're using is not fully described. When you test it locally, it
+behaves in a certain way (that is coherent with its specification), but when you deploy it
+somewhere else, the resource is implemented in a different way (which still adheres to the
+specification), which screws up your code. The behavior of the resource is non-deterministic,
+because several things might happen when you interact with it, but, in /your/ testing
+environment, not all of the possible traces can actually happen. You can only see a subset of
+them.
+
+*** The ultimate challenger: UB
+If you think carefully about what was said in the paragraph about the set of execution traces,
+there are three possible cases, but we have only mentioned two:
+- the set of execution traces is a singleton, the execution is deterministic, everything goes
+  well;
+- the set of execution traces has at least two traces, the execution is non-deterministic, things
+  get /weird/;
+- the set of executions traces is empty, things get /weirder/.
+
+How could it be that the set of execution traces is empty? Intuitively, it doesn't make sense for
+a programming language to have non-deterministic operations that simply have zero possible
+outcomes (and diverging counts as an outcode). Yet, it turns out that most "low-level"
+programming languages some operations are considered /Undefined Behavior/, that is, no defined
+behavior corresponds to that operation. At the language abstract machine level, if you were to
+try to "execute" a program with no valid execution trace, it would throw an error (but, with
+respect to the program, it would be a meta-error, similar to a type error, not something that you
+could catch). But, it is in general undecidable whether a given program leads to undefined
+behavior, and compilers /have/ to output something when the behavior is not undefined, so /it
+happens/ that a program with no behavior is executed. In this case, nothing has meaning anymore:
+by observing the behavior of the /executed/ program, you can obtain no information on "its trace"
+(since there is no such thing).
+
+Typically, this is the difference between what the C standard calls "undefined behavior" and
+"unspecified behavior". The former has no execution traces, the latter has more than one.
+
+In particular, it is possible for a bug leading to undefined behavior not to be detectable by
+simply witnessing the execution of a program. It might seem weird to say that a program has no
+execution trace while it is clearly executing before your eyes; this is one of the common
+pitfalls one might fall into while reasoning on UB. I suggest reading [[https://www.ralfj.de/blog/2019/07/14/uninit.html]["What the Hardware Does" is
+not What Your Program Does]], which does a pretty good job at explaning why it's impossible to
+test "at the hardware level" bugs that lead to UB.
 
 * Home
 :PROPERTIES:
