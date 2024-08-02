@@ -426,6 +426,106 @@ pitfalls one might fall into while reasoning on UB. I suggest reading [[https://
 not What Your Program Does]], which does a pretty good job at explaning why it's impossible to
 test "at the hardware level" bugs that lead to UB.
 
+** DONE The periodicity lemma: two elegant proofs   :computer_science:paper:
+:PROPERTIES:
+:EXPORT_FILE_NAME: word-periodicity-lemma
+:EXPORT_DATE: 2023-11-07
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :math true
+:END:
+The periodicity lemma is a widely useful result about word combinatorics. Yet, the paper that if
+often cited as the source for its proof, /Uniqueness Theorems for Periodic Functions/, uses very
+unusual techniques in stringology.
+
+#+begin_lemma
+If a word \(w\) has periods \(p\) and \(q\), and is of length at least \(p+q-\gcd(p, q)\), then
+\(w\) has period \(\gcd(p,q)\).
+#+end_lemma
+
+Before proving this stronger version of the lemma, let us state a weaker version. The point is
+that this alternative version has a purely combinatorics proof, that is also interesting /per
+se/.
+
+#+begin_lemma
+If a word \(w\) has periods \(p\) and \(q\), and is of length at least \(p+q\), then \(w\) has
+period \(\gcd(p, q)\).
+#+end_lemma
+#+begin_proof
+Assume \(q\geq p\). We are going to mimick Euclid's algorithm for computing \(\gcd(p, q)\). If
+\(p=q\), the result is clear.
+
+Otherwise, let \(i \leq |w|-(q-p)\) be a position in \(w\). If \(q\leq |w|\),
+\(w[i]=w[i+q]\). Futhermore, \(w[i+q-p]=w[i+q]\). Hence \[w[i]=w[i+(q-p)]\]
+Similarly, in the case, \(i-p\geq1\), and therefore \(w[i-p]=w[i]\). Since \(w[i-p]=w[i-p+q]\),
+we have the same result. This means that \(q-p\) is a period of \(|w|\).
+
+Note that \(\gcd(p, q-p)=\gcd(q, p)\) and that we certainly have \(p+(q-p)-\gcd(p,
+q)\leq|w|\). By induction (on \(p+q\), for instance"), the result holds.
+#+end_proof
+
+*** A useful fact
+Before giving two proofs of the lemma, we are going to show a very simple fact that will turn out
+to be useful for both proofs.
+
+#+begin_fact
+Let \(w\) be a word with periods \(p\) and \(q\). \(w\) has period \(\gcd(p, q)\) if, and only
+if, it can be extended in an infinite word that also has periods \(p\) and \(q\).
+#+end_fact
+#+begin_proof
+If \(w\) is \(\gcd(p, q)\)-periodic, then it can be extended to an infinite word that is
+\(\gcd(p, q)\)-periodic, and thus, that is also \(p\) and \(q\) periodic.
+
+Conversely, if \(w\) can be extended in such an infinite word \(\hat{w}\), then \(\hat{w}\) is
+\(\gcd(p,q)\)-periodic (which can be seen using the same proof as in the weak form of the
+lemma). Hence, since \(w\) is a subword of \(\hat{w}\), it is also \(\gcd(p,q)\)-periodic.
+#+end_proof
+
+*** Formal series proof
+Let us now, without further ado, give the first proof of the original lemma.
+#+begin_proof
+Consider \((a_n)_{n\in\mathbb{N}}\) (resp. \((b_n)_{n\in\mathbb{N}}\)) \(p\)-periodic (resp.
+\(q\)-periodic) sequence which extends \(w\). Let \(F\) (resp. \(G\)) be the formal series \[
+  F = \sum_{n=0}^\infty a_n X^n
+\] respectively \[
+  G = \sum_{n=0}^\infty b_n X^n
+\]
+By periodicity of \((a_n)\) and \((b_n)\), there exists polynomials \(P\) and \(Q\) of degree at
+most, respectively, \(p-1\) and \(q-1\), such that \(F=(1-X^p)^{-1}P\) and \(G=(1-X^q)^{-1}Q\).
+
+Then, let \(H=F-G\). We can write \(H=\dfrac{(1-X^q)P-(1-X^p)Q}{(1-X^p)(1-X^q)}\). Since \[
+1-X^{\gcd(p, q)}\mid{}1-X^p,1-X^q \] and since the degree of \((1-X^q)P-(1-X^p)Q\) is at most
+\(R\) is at most \(p+q-\gcd(p,q)\). Hence, \[R = H\dfrac{(1-X^p)}{1-X^{\gcd(p,q)}} \equiv
+0\mod{}X^{p+q-\gcd(p,q)}\] because, by hypothesis, \(H \equiv 0 \mod{} X^{p+q-\gcd(p,q)}\) and
+\(\dfrac{(1-X^p)(1-X^q)}{1-X^{\gcd(p,q)}}\) is a polynomial.
+
+Hence, \(R=0\) and thus \(H=0\), proving that \(F=G\). By using the Fact, we have that \(w\) is
+\(\gcd(p, q)\)-periodic.
+#+end_proof
+
+*** Linear algebra proof
+This second proof of the lemma will prove a slightly stronger statement: the length bound of
+\(p+q-\gcd(p,q)\) is optimal, that is, for any \(p\) and \(q\), there is a word \(w\) with
+periods \(p\) and \(q\) of length \(p+q-\gcd(p,q)-1\) and which is not \(\gcd(p,q)\)-periodic.
+
+#+begin_proof
+As before, consider \(a\) and \(b\) the sequences that extend \(w\) and that are, respectively,
+\(p\) and \(q\) periodic. By Fourier transform, there exists
+\((c_\omega)_{\omega\in\mathbb{U}_p}\) and \((d_\xi)_{\xi\in\mathbb{U}_q}\), such that, for all
+\(n\in\mathbb{N}\), \[ a_n = \sum_{\omega\in\mathbb{U}_p} c_\omega \omega^n \] and \[ b_n =
+\sum_{\xi\in\mathbb{U}_q} d_\xi xi^n \]
+
+Now, by hypothesis, for any \(n=1,\ldots,p+q-\gcd(p,q)\), we have \(a_n-b_n=0\). This defines a
+system of \(p+q-\gcd(p,q)\) linear equation in the \(p+q-\gcd(p,q)\) unknowns \(c_\omega\),
+\(-d_\xi\) for \(\omega\neq\xi\) and \(c_\omega-d_\xi\) for \(\omega=\xi\). The matrix of this
+system is a Vandermonde matrix, hence it is non-singular. Thus, for \(\omega \in \mathbb{U}_p
+\backslash \mathbb{U}_q\), \(c_\omega=0\) (and similarly for \(q\)-th root of the unity \(\xi\)
+which are not also \(p\)-th root of the unity, \(d_\xi=0\)), and for other \(\omega=\xi \in
+\mathbb{U}_p \cap \mathbb{U}_q\), \(c_\omega=d_\xi\). Therefore, for all \(n\in\mathbb{N}\),
+\(a_n=b_n\). In particular, using the Fact, \(w\) is \(\gcd(p,q)\)-periodic.
+#+end_proof
+
+Observe that, if we had less that \(p+q-\gcd(p,q)\) equations, then there would be a non-trivial
+linear subspace of solutions \((a, b)\) whose common prefix is \(p\)- and \(q\)-periodic. But,
+only one point of that linear subspace hasa a common prefix that is \(\gcd(p,q)\)-periodic.
 * Home
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: /
