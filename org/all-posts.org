@@ -636,7 +636,7 @@ similar kind of polymorphism.
 **** Monads
 
 One other key feature that OCaml lacks with respect to other function programming languages are
-monads. Monads in other function programming languages are implemented as type classes, which
+monads. Monads in other functional programming languages are implemented as type classes, which
 don't exist in OCaml. But even if they did, monads also need rank-2 polymorphism. That's a
 mouthful, but an example should make that sentence clear. Consider a plausible yet simple
 definition for monads in Lean[fn:lean-not-haskell]:
