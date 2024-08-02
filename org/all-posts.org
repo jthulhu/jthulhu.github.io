@@ -526,6 +526,379 @@ which are not also \(p\)-th root of the unity, \(d_\xi=0\)), and for other \(\om
 Observe that, if we had less that \(p+q-\gcd(p,q)\) equations, then there would be a non-trivial
 linear subspace of solutions \((a, b)\) whose common prefix is \(p\)- and \(q\)-periodic. But,
 only one point of that linear subspace hasa a common prefix that is \(\gcd(p,q)\)-periodic.
+
+** DONE A defense of OCaml          :computer_science:programming_languages:
+:PROPERTIES:
+:EXPORT_FILE_NAME: ocaml-defense
+:EXPORT_DATE: 2024-06-09
+:END:
+OCaml is a somewhat niche programming language. It lives in the small island of functional
+programming languages, but it's often compared, not very favourably, with Haskell. This makes
+OCaml niche even among its peer FP languages. Yet, OCaml has a very interesting feature
+combination that, in my opinion, makes it stand out, even when compared to Haskell.
+
+Note that, in all this post, I am going to compare a lot OCaml with Haskell, yet it shouldn't be
+read as a comparison between the two languages. I chose Haskell to stand for whetever other
+similar programming language there is on the small island of function programming languages,
+because it is, to my knowledge, the most famous and used among those.
+
+*** The pain points of OCaml
+
+While I am going to show certain unique features of OCaml in this post, to be fair, I have to
+start with a list of OCaml non-features. After all, the usual arguments that are made against
+OCaml, especially in favour of Haskell, are valid, and it would be dishonest to just ignore them
+to claim how good a language OCaml is.
+
+**** Type classes
+
+#+begin_quote
+There once was a happy programmer, you, who had to perform computations using floating point
+numbers (which made them less of a happy human being). As a perfectly normal person, you used an
+large amount of =+=, =/= and =*= before launching the compiler and leaving the room to get a
+coffee[fn:coffee-note], confident that you did a good job, and that everything would work fine.
+
+When you sat again on their chair to see how perfectly well everything went, you felt a sudden
+shock: dozens and dozens of type error, claiming that =This expression has type float but an
+expression was expected of type int=. /Quick, quick, get the manual, what is this sorcery/, you
+thought, as you reached for the beloved book. You felt disgust when you read[fn:ocaml-manual-float]
+
+#+begin_blockquote
+Notice also that integers and float-point numbers are distinct types, with distinct operators:
+=+= and =*= operate on integers, but =+.= and =*.= operate on float.
+#+end_blockquote
+Painfully, you go through your whole codebase, making the appropriate changes. You compile again.
+This time, there is no longer optimism, you don't leave your desktop for a coffee. After a short
+time, the compilation ends, this time with no errors. /Ah/, you think, /this time things must
+have worked out as expected/. Then you run your program, and you get an awfully uninformative
+error
+
+#+begin_src ocaml
+  Exception: Invalid_argument "compare: functional value".
+#+end_src
+
+You get to the manual once again (from now on, that's a tab you're never closing again). After a
+couple of minutes, you realize with horror what this is: this error message is a /runtime type
+error/. It's a world that crumbles under your feet: you thought types were a compile-time only
+thing, and that "well-typed programs can't go wrong"[fn:robin-quote], and that OCaml had type
+safety, and that, at this rate, you might as well program directly in assembly, at least you'll
+/known/ that you're going to get screwed.
+#+end_quote
+
+This tale of horror shows well the kind of idiosyncrasies found in OCaml that are very elegantly
+solved in Haskell with type classes. The problem is that, in OCaml, polymorphic functions cannot
+constraint they type they are polymorphic over[fn:exception-constraints]. A polymorphic function
+/has/ to work for any type, and it has to consider the given type as opaque. This means that
+there is no way to write a single addition function that works both for integers and for floating
+point numbers. The Haskell-like solution would be to make the =add= function take the /actual/
+=add= implementation as an argument, ie.
+
+#+begin_src ocaml
+let add (add_impl : 'a -> 'a -> 'a) (x : 'a) (y : 'a) : 'a =
+  add_impl x y
+#+end_src
+
+the trick being that the compiler is automatically capable of inferring what =add_impl= should
+be, so that if you write =add 3 4=, the compiler would make it become =add (+) 3 4=, whereas if
+you wrote instead =add 3.0 4.0=, the compiler would have made it become =add (+.) 3.0 4.0=.
+However, in OCaml, we cannot mimic that feature, as the compiler doesn't do that, and so our
+=add= function is basically useless. Instead of =add (+) 3 4=, one might as well write =3 + 4=.
+
+The second issue in our tale is due to a similar problem, which was worked around differently in
+OCaml. The problem arises with the equality test === (or any comparison function, actually). I
+can write src_ocaml[:exports code]{3 = 4} and src_ocaml[:exports code]{3.0 = 4.0}, so
+src_ocaml[:exports code]{(=)} has to be polymorphic; but the actual comparison cannot be the same
+for every type, ie. you don't compare for equality an integer as you would, say, a record. To
+work around this, the src_ocaml[:exports code]{(=)} function is "compiler magic", ie. you
+couldn't write it yourself, you have to rely on the compiler internals secretly exposed, which
+is, by itself, not very pretty. And, in this case, you can't have a ==.= version just for float,
+because you need to be able to compare every type that the user can create, so the "compiler
+magic" is needed.
+
+However, there is still an issue with this approach: there are some types for which it doesn't
+make sense to instantiate the polymorphic equality. For instance, OCaml doesn't know how to
+compare function for equality. And so, indeed, if you try src_ocaml[:exports code]{Fun.(id =
+id)}, you get the aforementioned runtime error. Ugh.
+
+In Haskell (and, more generally, in programming languages that use type classes), there are no
+such problems: instances of a given type class are created just for types for which it makes
+sense.  What this means, if you don't know what type classes are, is that, using the same
+addition example as before, the only =add_impl= function the compiler knows about, and is allowed
+to implicitly insert, are registered by the user. Similarly for the equality, if no one registers
+the equality comparison for functions, the compiler could never accept src_ocaml[:exports
+code]{Fun.(id = id)}.
+
+While the situation might look very bleak, people at OCaml are working on modular implicits,
+which, as its name suggest, would be a way to make the compiler implicitely pass modules as
+function arguments, similarly to how the Haskell compiler implicitely passes instances of type
+classes as function arguments. It's not quite the same thing, but in the end, would permit a very
+similar kind of polymorphism.
+
+**** Monads
+
+One other key feature that OCaml lacks with respect to other function programming languages are
+monads. Monads in other function programming languages are implemented as type classes, which
+don't exist in OCaml. But even if they did, monads also need rank-2 polymorphism. That's a
+mouthful, but an example should make that sentence clear. Consider a plausible yet simple
+definition for monads in Lean[fn:lean-not-haskell]:
+
+#+begin_src lean4
+  class Monad (m : Type → Type) where
+    pure : α → m α
+    bind : m α → (α → m β) → m β
+#+end_src
+
+You might not understand all of this definition, but the important part is the first line, and
+more specifically =m : Type → Type=, where =Type= is the type of types (ie. =String : Type=). The
+type =Type → Type= corresponds to type families over types, or, said in another way, types which
+are themselves polymorphic. A good example would be ='a list=: it can be thought as a kind of
+"function" which associates a concrete type =int= to a concrete type =int list=. That's important
+because, as you can see, in the rest of the definition, =m= is instantiated with different
+arguments. While ='a list= makes sense in OCaml, we cannot talk of just =list= alone, as the
+"function" which associates any type ='a= to a ='a list=. That's a big deal, and prevents us from
+defining monads.
+
+Just as loops and procedures are great, powerful and general-purpose abstractions whose absence
+you really feel when programming in a programming language that doesn't have those (such as
+assembly), monads are very powerful abstraction that are used *a lot* in programming languages
+that have them, and that match very well the usual idioms of functional programming. This is why
+people push them a lot as an argument when comparing Haskell and OCaml.
+
+In fact, OCaml has, over the years, been percolated through by ideas, idioms and naming
+conventions that stem from monadic programming. Some examples include
+- the =Option.bind= name (it's the same =bind= as in the definition above, where =m= would be
+  =option=)
+- the =let= operators, whose purpose is to mimic the =do= notation
+
+In fact, even though monads cannot be expression with the core type system of OCaml, they can be
+expressed using modules (which is why people are interested in making the compiler capable of
+implicitely adding module arguments, and not just "regular" value arguments):
+
+#+begin_src ocaml
+module type Monad = sig
+  type 'a t
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+end
+#+end_src
+
+While this definition is not present in the standard library, it is in the alternative standard
+library developed by Jane Street, =Core=. It's still not as practical to use as in Haskell,
+mainly because of the lack of implicit arguments, lack of =do= notation, and because it's not as
+widely used in the rest of the ecosystem. There also are some rough edges, and sometimes working
+extensively with modules as first class values requires using lesser-known OCaml features, such
+as locally abstract types, for which, unless you already know they exist, you'll get no help from
+the compiler error messages.
+
+*** Where OCaml shines
+
+After all of what I've said, you might be convinced never to use OCaml again. After all, it seems
+that Haskell is just a better version of OCaml. A *pure* version of OCaml.
+
+**** Purity
+
+Indeed, an important argument that is made against OCaml with respect to Haskell, of which I
+haven't discussed yet, is its lack of purity. OCaml has some imperative aspects, and it doesn't
+even try to hide them! Functional programming people are usually very much aware of the
+advantages of not having imperative idioms in their code base, so they tend to see every
+occurrence of imperative programming as a lost occasion of doing something better, ie. in a more
+functional (and thus elegant) way. And, while part of me strongly agrees with this almost
+simplistic view of the world, there is also something interesting that rises out of the
+intersection of pure, functional programming and imperative programming. Something that goes
+beyond trying to stitch a functional program with an imperative one in an abomination of nature.
+
+Indeed, programming languages like OCaml are ideal for data structures called "semi-persistent".
+To undestand what that means, let's make a little digression on data structures. Data structures
+(and in algorithmics in general), things are presented in an imperative fashion, the underlying
+model usually being (based on) Turing machines. Persistent data structures are those for which,
+even after modifying them, every "version" is still available, ie. every state of the data
+structure between two mutable operations on them is still accessible as it was "back then", and
+can be in turn operated onto as if nothing happened to it. This is very similar to how data
+structures work in pure functional programming languages, because in this setting data structures
+cannot be mutated, so if one still has a pointer to a certain version of a data structure, the
+underlying data must be as it was when it was created; and it can freely be used without fear of
+breaking someone else's data. However, it should to be noted that persistent data structure in
+general need not to be implemented using immutability. They should just exhibit observational
+immutability.
+
+This is were OCaml kicks in: Conchon and Filliâtre built[fn:conchon-filliatre] several
+semi-peristent (a weaker, yet still useful in pratice, version of persistence) version of
+classical and widely used data structures, such as arrays, lists and hash tables, in OCaml. These
+data structures particularly shine because they exhibit imperative-like tight complexity,
+performance wise, and yet pure functional-like signatures, with the same guarantees one has with
+such immutable data structures. This is only possible in a language where it is highly idiomatic
+to program in a functional fashion, yet imperative code is still possible, without additional
+abstraction costs to "bridge the gap". That gives you the best of both worlds: efficient
+implementations with strong semantic promises. And, indeed, this is how every functional
+programming is, in the end compiled. Even Haskell has to do, behind the scenes, imperative stuff.
+The difference is that, in OCaml, this is a first class feature, rather than something people
+should be afraid of. Of course, this has a cost: beyond the stigma associated with non-purity in
+OCaml, this also makes it possible to /actually write imperative code that doesn't behave as if
+everything was purely immutable/, which can be a curse.
+
+But my point is, OCaml being non-pure is not a bug, or a hideous part of the language people
+prefer not to look at. It's a feature. It has its limitations, but it's still a feature. That
+Haskell doesn't have. And, in fact, one might argue that Haskell's way to cope for the
+performance gap is lazyness[fn:functional-gap].
+
+**** Compiler efficiency
+
+An argument that I also often hear in favour of Haskell is that it has a /very/ good compiler,
+whereas OCaml's compiler is "just good". Don't get me wrong, both languages have compilers with
+tens of year of engineering and fine-tuning, backed up by a significant amount of theoretical
+work and wise language design. It's just that Haskell's compiler really seems to be very, /very/
+good[fn:haskell-compiler-quality].
+
+However, to me, it seems that this is due to the amount of costly abstraction that Haskell piles
+up. Basically, Haskell has too many abstractions to be very competitive on the efficiency of the
+generated code, unless its compiler does a lot of optimisations. And it's what it does. OCaml, on
+the other hand, has much less abstractions, and the more costly ones are also the niche ones that
+I barely ever see used (even though I do not claim to have seen a representative sample of all
+OCaml programs). In fact, OCaml has a /more/ optimizing compiler, called flambda, which, besides
+making the "regular code" generate faster maching code (in general), also makes those costly
+abstractions much less expensive. But it's not even the default compiler. Because, for most
+usages, the usual compiler provides good enough performance, and, importantly, is very
+predictable in the performance of the generated code, a property that the Haskell compiler lacks
+(and apparently some find very annoying).
+
+A good example is the definition of the composition operator found in Haskell's =Prelude=:
+
+#+begin_src haskell
+  {-# INLINE (.) #-}
+  -- Make sure it has TWO args only on the left, so that it inlines
+  -- when applied to two functions, even if there is no final argument
+  (.)    :: (b -> c) -> (a -> b) -> a -> c
+  (.) f g = \x -> f (g x)
+#+end_src
+
+Funnily enough, to make sure that the optimiser does the right thing, this definition has to be
+tagged as =INLINE=, it has to be written in a way that it will be inlined as wanted, /and/ there
+has to be a comment indicating that it's defined as so for a good reason. This shows you how
+brittle Haskell's optimizer can be, despite the fact that optimization is very important for that
+language.
+
+This also makes OCaml a suitable target language for a compiler, in that there are no risks of
+the OCaml compiler blowing up in your face.
+
+**** Software architecture
+An other interesting aspect of OCaml is its support for several programming paradigms, that allow
+different architecture design. A concrete example of this very vague-sounding sentence is
+introduced by considering a game containing various entities, like monsters (zombies, skeletons,
+...), passive entities, and so on and so forth. In an object oriented programming language, these
+might be represented by a class hierarchy, at the root of which might be the abstract entity
+class, down to a, say zombie class. The behavior for entities is specified by methods, which are
+implemented in each class. In a function programming language, instead, these might be
+represented using algebraic data types. The behavior for entities is specified in functions that
+pattern match on the entities. These might look like similar solutions in different paradigm, but
+are, in fact, quite different.
+
+For instance, think now that I want to add a new creature in my game. In the OO version, that
+involves creating a new class that subclasses whatever appropriate parent class in the hierarchy.
+This is good, because it's a local change. I don't need to revisit all my existing code base to
+do so. In fact, I could even do so if I had to link against a precompiled piece of code, having
+only access to header declarations.
+
+In my ADT solution, however, things are not so simple. Not only I have to modify the type that
+holds every possible entity in my game, which requires having access to said code, and not just
+the binaries, but I also have to modify every single "behavior" function that pattern matches on
+entities, because I've added a new case. It's a highly non-local change.
+
+Now, imagine that, rather than adding a new kind of entity, I'd rather add a new kind of
+behavior. In the OO setting, that means adding a new method, which means modifying the whole
+hierarchy. The behavior is tighly coupled with each entity. In my AST setup, though, adding a new
+behavior just means defining a new function, which can be done locally.
+
+In short, code that relies on dynamic dispatch makes vertical extensions (those where you add a
+new case) easy, because the behavior is bundled with the objects themselves. Matching-based code
+makes horizontal extensions easy, exactly because behavior is not coupled with the data.
+
+Most programming languages have quite an opinionated view on whether you should rely on dynamic
+dispatch, or case switching. In pure OO languages, for instance, it is considered not idiomatic
+to test whether a given object is of a given type. Think of duck typing, "/if it walks like a
+duck, and it quacks like a duck, then it must be a duck/". They try to work around the
+difficulties of making horizontal extensions by using hooks, double dispatch, and other kind of
+OO patterns. In OCaml, you are gently pushed towards the other end of the spectrum, as the most
+natural way to encode problems is usually with ADTs. However, OCaml has a very wide palette of
+features that allow you to trade off horizontal extensionability for vertical extensionability.
+
+Of course, you might be tempted to remind yourself that the '/O/' in OCaml stands for
+/objective/, which means that OCaml should be an OO language. While technically true, and while
+OCaml has a quite original yet featureful object paradigm, it's a feature that I very rarely see
+used in practice. In fact, it might be the single one feature of OCaml I have never seen used in
+a real life project[fn:ocaml-unused-feature]. But there are other alternatives.
+
+For instance, exceptions in OCaml are open-ended, meaning that anyone can define new exceptions
+and throw one in your code, so you can't possibly handle them all, except in a uniform way that
+is not aware of the exact kind of exception. This is an example of a more general feature of
+OCaml, open sum types, which are sum types for which everyone can add variants. The pattern
+matching on these types is a bit peculiar, because the only way to can make it exhaustive is by
+adding a catchall pattern.
+
+The more featureful way to have dynamic dispatch is to use first-class modules. Not only it
+nicely integrates with the rest of the OCaml ecosystem, and especially nicely with functors, but
+it is /more expressive/ than "regular" dynamic dispatch, because modules do not just bundle
+values (which covers both an internal state and "methods"), but also types (and even type
+families, which is how you can encode higher sorted polymorphism in OCaml) and modules. Modules
+are also /extra nice/ because they do not necessarily entail dynamic dispatch, and because the
+modular implicits planned feature --- the one that is supposed to get rid of the very first pain
+point I mentioned --- relies on, well, modules.
+
+But the greatest part of it is that OCaml has plenty of features for various kind of dynamic
+dispatch (and I haven't even talked about polymorphic variants, and the row polymorphism that
+goes with them), so that you can pick the most appropriate one for your problem. Most of the
+time, you won't need those, but they're always availble. And they all integrate nicely with each
+other[fn:integration-performance], which means that even if other parts of your code do not use
+objects at all, you can still make them interact with object-based pieces of code.
+
+
+[fn:coffee-note] You don't like coffee? Yeah, well, me neither, but I still get a cup of coffee
+    before compiling code, because I see many of my peers do so, so I believe it's a good omen or
+    something like that. You'll tell me that this is [[https://en.wikipedia.org/wiki/Cargo_cult_programming][cargo cult]], and I'll answer you that I've
+    seen so many people apply cargo cult and get working(ish) results in the end that I believe
+    in cargo cult being a proper way of doing things. You'll tell me that this is meta-cargo
+    cult, and I'll politely remind you that this post is neither about coffee nor cargo cult, so
+    if you could stop interrupting me, it would be nice.
+
+[fn:ocaml-manual-float] You don't believe me? And yet, [[https://www.ocaml.org/manual/5.2/coreexamples.html#s%3Abasics][there it is]].
+
+[fn:robin-quote] That quotation is from Robin Milner, and comes from /[[https://doi.org/10.1016%2F0022-0000%2878%2990014-4][A Theory of Type Polymorphism
+in Programming]]/.
+
+[fn:exception-constraints] Except for row polymorphism, which might be seen as parametric
+    polymorphism with constraints. But for our problem, row polymorphism cannot help.
+
+[fn:lean-not-haskell] Even though I've mentioned Haskell a lot in this post, I only did so because
+    it's (as far as I know) the most widely used and known functional programming language with a
+    very expressive type system, type classes, and all the good stuff. Yet, I am more acquainted
+    with Lean, which, for what we are interested into, is very similar. So, whenever I need to
+    write snippets of code in a FP language that supports type classes, it will be Lean.
+
+[fn:conchon-filliatre] They do so in /[[https://doi.org/10.1007/978-3-540-78739-6_25][Semi-persistent Data Structures]]/.
+
+[fn:functional-gap] There exists a theoretical "gap" between how efficient you can write algorithms
+    in a purely functional fashion and in an imperative fashion. That gap is, at most, a
+    logarithmic factor, and there exists some problems for which there is indeed to purely
+    functional algorithm that is faster than its imperative counterpart times a logarithmic
+    factor. But this only applies to /eager/ purely functional programs. See /[[https://dog.org/10.1145/244795.244798][Pure vs. Impure
+    Lisp]]/.  Of course, this overlooks the fact that modern computers have an inherently
+    imperative architecture, and that programming in a pure functional fashion requires relying
+    on abstractions, which can be expensive on their own. This is especially true in Haskell,
+    where the difference of performance between the naive version of the code generated and the
+    optimized one is very important, because their code generation generates /a lot/ of stuff.
+
+[fn:haskell-compiler-quality] I have to admit that this is not something that I have personally
+    checked. I have never run compiler benchmarks comparing Haskell and OCaml, nor have I ever
+    read their source code to evaluate the efficiency of the algorithms used and which
+    optimisations are done. But this is something that I hear from people who have done so, so I
+    am rather inclined in trusting it.
+
+[fn:ocaml-unused-feature] Well, I lied. There is also higher ranked polymorphism.  And there's
+    recursive modules too.  And irregular types.  And explicitly polymorphic type ascriptions.
+    And... actually OCaml is pretty full of features I've never seen used.
+
+[fn:integration-performance] Up to performance consideration: objects and polymorphic variants
+    are, essentially, hash tables, which are much less performant than module values or ADTs. So,
+    sure, you can use them without fear of incompatibility, but in practice it's a good thing
+    that you don't.
 * Home
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: /
