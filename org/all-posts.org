@@ -978,6 +978,42 @@ language-specific package manager has the following advantages over having one:
 insert an XKCD comic making the same point. I think that, if it becomes a meme how poorly you do
 something, it becomes superfluous to argue any further.
 
+** TODO Stochastic dichotomy, or how to bake (probably) good cookies :computer_science:
+:PROPERTIES:
+:EXPORT_FILE_NAME: stochastic-dichotomy
+:EXPORT_DATE: 2024-08-02
+:EXPORT_HUGO_CUSTOM_FRONT_MATTER: :math true
+:END:
+This morning, I participated in baking cookies, but I didn't have a balance, or any measurement
+tool, so the relative quantities of the ingredients had to be guessed.  The procedure employed to
+do so has been to put some of the ingredients in, check if it looked like there were too many of
+a kind, and try to rectificate.  If we only have one ingredient \(I\) we're trying to find the
+correct amount for, we can assume that, if we put too much, we can add every other ingredient in
+the same proportions so as to make it as if we were (proportionally speaking) removing
+\(I\)[fn:cookie-quantity].  Under these assumptions, it looks like the best way to find the correct
+amount of \(I\) that you should use to bake the cookies is by dichotomy.
+
+The problem comes from the fact that, in real life, when you're baking cookies, it's not /clear/
+whether you have the right amount of \(I\) or not.  Maybe it locally looks like there's too much
+of it, but it's only because the cookie dough is still heterogeneous.  What if, by accident, you
+were to assert that there is too much \(I\), whereas in fact there is not enough \(I\)?  If we
+apply the dichotomy strategy "blindly", we are never going find the correct amount of \(I\). If
+we don't do any more measurment mistakes, we will simply always find that there is not enough
+\(I\), slowly converging towards the quantity that we mistakingly measured as "too much".
+
+Therefore, we would need to adapt the dichotomy algorithm in a way that it takes into account
+uncertainty.  This is the goal of the current post: come up with a search scheme based on
+dichotomy, but that allows erroneous results.
+
+*** Specifications for the scheme
+The scheme should have the following specifications: assuming a prior uniform distribution on a
+bounded interval for the possible quantity of \(I\) to put in the cookie dough, the scheme should
+iteratively ask whether a certain quantity of \(I\) is too much or not enough, and we should
+answer the scheme by making the measurement, and reporting the probability that the measurement
+is correct.  We also want the scheme to incrementally adjust the 
+
+[fn:cookie-quantity] This is not a problem as, as is widely known, no matter the quantity of baked cookies, they will
+eventually be eaten.
 * Home
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: /
