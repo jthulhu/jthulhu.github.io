@@ -28,7 +28,7 @@ jobs:
     - name: Setup Emacs
       uses: purcell/setup-emacs@master
       with:
-        version: 29.4
+        version: release-snapshot
 
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v2
@@ -40,6 +40,11 @@ jobs:
 
     - name: Build (Hugo to site)
       run: hugo
+
+    - name: Upload debug artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: .
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
