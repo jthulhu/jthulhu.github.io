@@ -881,7 +881,7 @@ in Programming]]/.
 
 [fn:functional-gap] There exists a theoretical "gap" between how efficient you can write algorithms
     in a purely functional fashion and in an imperative fashion. That gap is, at most, a
-    logarithmic factor, and there exists some problems for which there is indeed to purely
+    logarithmic factor, and there exists some problems for which there is indeed no purely
     functional algorithm that is faster than its imperative counterpart times a logarithmic
     factor. But this only applies to /eager/ purely functional programs. See /[[https://dog.org/10.1145/244795.244798][Pure vs. Impure
     Lisp]]/.  Of course, this overlooks the fact that modern computers have an inherently
@@ -1012,8 +1012,8 @@ iteratively ask whether a certain quantity of \(I\) is too much or not enough, a
 answer the scheme by making the measurement, and reporting the probability that the measurement
 is correct.  We also want the scheme to incrementally adjust the 
 
-[fn:cookie-quantity] This is not a problem as, as is widely known, no matter the quantity of baked cookies, they will
-eventually be eaten.
+[fn:cookie-quantity] This is not a problem as, as is widely known, no matter the quantity of baked
+cookies, they will eventually be eaten.
 * Home
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: /
