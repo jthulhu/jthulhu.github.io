@@ -25,16 +25,22 @@ unsafe = true
   weight = 10
 
 [[menu.main]]
+  identifier = "about-me"
+  name = "About Me"
+  url = "/about-me"
+  weight = 20
+
+[[menu.main]]
   identifier = "search"
   name = "Search"
   url = "/search"
-  weight = 20
+  weight = 30
 
 [[menu.main]]
   identifier = "tags"
   name = "Tags"
   url = "/tags"
-  weight = 30
+  weight = 40
 
 [[module.imports]]
   path = "github.com/adityatelange/hugo-PaperMod"
