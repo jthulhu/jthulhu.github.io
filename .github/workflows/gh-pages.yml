@@ -39,7 +39,7 @@ jobs:
       run: emacs ./org/all-posts.org --batch --eval="(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t) (package-initialize) (package-install 'ox-hugo) (require 'ox-hugo) (org-hugo-export-wim-to-md t))" --kill
 
     - name: Build (Hugo to site)
-      run: hugo --minify
+      run: hugo
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
