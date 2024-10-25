@@ -5,20 +5,19 @@
       const references = document.getElementsByClassName("footnote-ref");
 
       for (i = 0; i < references.length; i++) {
-          const id = references[i].hash.substr(1)
+          const id = references[i].hash.substr(1);
           const refContent = document
                 .getElementById(id)
-                .textContent
-                .trim()
-                .slice(0, -2)
-                .trimEnd()
+                .cloneNode(true)
+                .childNodes[1];
+          refContent.removeChild(refContent.lastChild);
           tippy(references[i], {
               content: refContent,
               animation: 'shift-toward-extreme',
-              // interactive: true,
+              interactive: true,
               // duration: 1000,
-              delay: [0, 300],
-          })
+              delay: [0, 100],
+          });
       }
   })
 </script>
