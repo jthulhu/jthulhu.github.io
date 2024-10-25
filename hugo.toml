@@ -8,6 +8,17 @@ ShowCodeCopyButtons = true
 ShowToc = true
 hideFooter = true
 
+[params.profileMode]
+enabled = true
+title = "microbo"
+subtitle = "jthulhu's website"
+imageUrl = "/images/scantree.png"
+
+[params.assets]
+favicon = "/favicons/favicon.ico"
+favicon16x16 = "/favicons/favicon-16x16.png"
+favicon32x32 = "/favicons/favicon-32x32.png"
+
 [outputs]
 home = ["HTML", "RSS", "JSON"]
 
