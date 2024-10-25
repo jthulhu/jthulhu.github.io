@@ -5,6 +5,7 @@ title = "microbo"
 [params]
 ShowReadingTime = true
 ShowCodeCopyButtons = true
+ShowToc = true
 hideFooter = true
 
 [outputs]
