@@ -33,7 +33,7 @@ jobs:
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v2
       with:
-        hugo-version: 'latest'
+        hugo-version: '0.135.0'
 
     - name: Build (Org to Hugo)
       run: emacs ./org/all-posts.org --batch --eval="(progn (require 'package) (add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t) (package-initialize) (package-install 'ox-hugo) (require 'ox-hugo) (org-hugo-export-wim-to-md t))" --kill
