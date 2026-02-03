@@ -1104,12 +1104,13 @@ Starikovskaya. [[https://doi.org/10.1137/1.9781611977073.30][/Streaming Regular 
 :END:
 
 ** Notes
+- /Notes on (Co)end Calculus/ [[[https://microbo.eu/notes/coend-calculus.pdf][notes]] ([[https://github.com/jthulhu/notes/releases/download/latest/coend-calculus.pdf][src]])]
 - /Notes on Locally Cartesian Closed Categories/ [[[https://microbo.eu/notes/locally-cartesian-closed-categories.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/locally-cartesian-closed-categories.typ][src]])]
 - /Notes on Grothendieck Fibrations/ [[[https://microbo.eu/notes/grothendieck-fibrations.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/grothendieck-fibrations.typ][src]])|[[https://microbo.eu/notes/grothendieck-fibrations-slides.pdf][slides]] ([[https://github.com/jthulhu/notes/blob/release/grothendieck-fibrations-slides.typ][src]])]
 
 
 ** Internship thesis
-- /Syntax and Semantics of a Linear Dependent Type Theory/ [[[https://microbo.eu/master-thesis/memoire.pdf][thesis]]|slides]
+- /Syntax and Semantics of a Linear Dependent Type Theory/ [[[https://microbo.eu/master-thesis/memoire.pdf][thesis]]|[[https://microbo.eu/master-thesis-slides/soutenance.pdf][slides]]]
 - /Two-level Type Thoery in Lean, and Applications to Semi-Simplicial Type in HoTT/ [[[/thesis/2ltt-in-lean-and-applications-in-hott/thesis.pdf][thesis]]|[[/thesis/2ltt-in-lean-and-applications-in-hott/slides.pdf][slides]]]
 - /Approximate Streaming Regular Pattern Matching/ [[[/thesis/approximate-streaming-regular-pattern-matching/thesis.pdf][thesis]]|[[/thesis/approximate-streaming-regular-pattern-matching/slides.pdf][slides]]]
 - /Automatic Benchmark Generation/ [[[/thesis/automatic-benchmark-generation/thesis.pdf][thesis]]|[[/thesis/automatic-benchmark-generation/slides.pdf][slides]] (in French)]
