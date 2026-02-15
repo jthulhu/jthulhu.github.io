@@ -1104,6 +1104,7 @@ Starikovskaya. [[https://doi.org/10.1137/1.9781611977073.30][/Streaming Regular 
 :END:
 
 ** Notes
+- /Notes on Representations of 2-groups/ [[[https://microbo.eu/notes/representation-of-2-groups.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/representation-of-2-groups.typ][src]])]
 - /Notes on (Co)end Calculus/ [[[https://microbo.eu/notes/coend-calculus.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/locally-cartesian-closed-categories.typ][src]])]
 - /Notes on Locally Cartesian Closed Categories/ [[[https://microbo.eu/notes/locally-cartesian-closed-categories.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/locally-cartesian-closed-categories.typ][src]])]
 - /Notes on Grothendieck Fibrations/ [[[https://microbo.eu/notes/grothendieck-fibrations.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/grothendieck-fibrations.typ][src]])|[[https://microbo.eu/notes/grothendieck-fibrations-slides.pdf][slides]] ([[https://github.com/jthulhu/notes/blob/release/grothendieck-fibrations-slides.typ][src]])]
