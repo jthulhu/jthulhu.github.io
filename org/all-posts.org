@@ -1104,7 +1104,7 @@ Starikovskaya. [[https://doi.org/10.1137/1.9781611977073.30][/Streaming Regular 
 :END:
 
 ** Notes
-- /Notes on Categorical models of logic/ [[[https://microbo.eu/notes/categorical-models-of-logic.pdf][notes]] (/draft/) ([[https://github.com/jthulhu/notes/blob/release/categorical-models-of-logic.typ][src]])]
+- /Notes on Categorical models of logic/ [[[https://microbo.eu/notes/categorical-semantics-of-logic.pdf][notes]] (/draft/) ([[https://github.com/jthulhu/notes/blob/release/categorical-semantics-of-logic.typ][src]])]
 - /Notes on Representations of 2-groups/ [[[https://microbo.eu/notes/representation-of-2-groups.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/representation-of-2-groups.typ][src]])]
 - /Notes on (Co)end Calculus/ [[[https://microbo.eu/notes/coend-calculus.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/locally-cartesian-closed-categories.typ][src]])]
 - /Notes on Locally Cartesian Closed Categories/ [[[https://microbo.eu/notes/locally-cartesian-closed-categories.pdf][notes]] ([[https://github.com/jthulhu/notes/blob/release/locally-cartesian-closed-categories.typ][src]])]
