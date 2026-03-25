@@ -1033,7 +1033,8 @@ cookies, they will eventually be eaten.
 Hello 👋,
 
 I'm Adrien Mathieu (aka. jthulhu[fn:jthulhu]).  I'm currently studying theoretical computer science
-at ENS, in Paris.
+at ENS, in Paris.  I am starting a PhD under the supervision of Paul-André Melliès and Thierry
+Coquand, titled _Linear duality and higher algebraic effects in homotopy type theory_.
 
 ** Scientific interests
 I am interested in a wide variety of subjects in computer science, but life is short, so here is
@@ -1045,6 +1046,15 @@ a list of those that particularly interest me, in no particular order:
 - category theory
 
 ** Internships
+*** Syntax and Semantics of a Linear Dependent Type Theory
+/Under the supervision of [[https://www.irif.fr/~mellies][Paul-André Melliès]], at IRIF (Paris)/
+
+The goal of the internship was to study models of dependent type theory, to "linearize"
+them, and to attempt to retrofit a theory on them, giving rise to a linear dependent type
+theory.  The internship has produced a theory that, contrary to other linear dependent type
+theories, effectively mixes linearity and dependence, without distinction between cartesian
+and linear types.  This theory relies heavily on the distinction between several contexts,
+and a key concept: the singleton type, which permits leaking information between contexts.
 *** Two-Level Type Theory in Lean, and applications to semi-simplicial types in HoTT
 /Under the supervision of [[https://www.cse.chalmers.se/~sattler/][Christian Sattler]], in the Logic and Types unit, at Chalmers
 (Göteborg)./
